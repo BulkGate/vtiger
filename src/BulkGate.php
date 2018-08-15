@@ -1,17 +1,14 @@
 <?php
-/*+**********************************************************************************
- * The contents of this file are subject to the vtiger CRM Public License Version 1.0
- * ("License"); You may not use this file except in compliance with the License
- * The Original Code is: vtiger CRM Open Source
- * The Initial Developer of the Original Code is vtiger.
- * Portions created by vtiger are Copyright (C) vtiger.
- * All Rights Reserved.
- ************************************************************************************/
 
 class SMSNotifier_BulkGate_Provider implements SMSNotifier_ISMSProvider_Model 
-{  	
+{
+    /** @var string */
 	private $username;
+
+	/** @var string */
     private $password;
+
+    /** @var array */
     private $parameters = array();
 
     const SERVICE_URI = 'https://portal.bulkgate.com/api/1.0/simple';
@@ -268,8 +265,7 @@ class SMSNotifier_BulkGate_Provider implements SMSNotifier_ISMSProvider_Model
             'EH' => 'Western Sahara',
             'YE' => 'Yemen',
             'ZM' => 'Zambia',
-            'ZW' => 'Zimbabwe',
-            'false' => "-")),
+            'ZW' => 'Zimbabwe')),
     );
 
     public function getName() 
@@ -288,13 +284,13 @@ class SMSNotifier_BulkGate_Provider implements SMSNotifier_ISMSProvider_Model
         $this->parameters[$key] = $value;
     }
 
-    public function getParameter($key, $defaultvalue = false) 
+    public function getParameter($key, $value = null)
     {
         if (isset($this->parameters[$key])) 
         {
             return $this->parameters[$key];
         }
-        return $defaultvalue;
+        return $value;
     }
 
     public function getRequiredParams() 
@@ -308,8 +304,12 @@ class SMSNotifier_BulkGate_Provider implements SMSNotifier_ISMSProvider_Model
         {
             switch (strtoupper($type)) 
             {
-                case self::SERVICE_SEND : return self::SERVICE_URI.'/promotional/';
-                //case self::SERVICE_QUERY : return self::SERVICE_URI . '/status/message/';
+                case self::SERVICE_SEND:
+                    return self::SERVICE_URI.'/promotional/';
+                break;
+                /*case self::SERVICE_QUERY:
+                 return self::SERVICE_URI . '/status/message/';
+                break;*/
             }
         }
         return false;
@@ -317,28 +317,31 @@ class SMSNotifier_BulkGate_Provider implements SMSNotifier_ISMSProvider_Model
 
     protected function prepareParameters() 
 	{
+	    $params = array();
+
         foreach (self::$REQUIRED_PARAMETERS as $requiredParam)
         {
             $paramName = $requiredParam['name'];
             $params[$paramName] = $this->getParameter($paramName);
         }
-        $params['format'] = 'json';
         return $params;
     }
 
-    public function send($message, $tonumbers)
+    public function send($message, $toNumbers)
     {
-        if (!is_array($tonumbers))
+        if (!is_array($toNumbers))
         {
-            $tonumbers = array($tonumbers);
+            $toNumbers = array($toNumbers);
         }
 
         $params = $this->prepareParameters();
         $params['text'] = $message;
-        $params['number'] = implode(';', $tonumbers);
+        $params['number'] = implode(';', $toNumbers);
 
-        $serviceURL = $this->getServiceURL(self::SERVICE_SEND);
-        $httpClient = new Vtiger_Net_Client($serviceURL);
+        $httpClient = new Vtiger_Net_Client(
+            $this->getServiceURL(self::SERVICE_SEND)
+        );
+
         $response = $httpClient->doPost(array(
             "application_id" => $params['username'],
             "application_token" => $params['password'],
@@ -371,42 +374,42 @@ class SMSNotifier_BulkGate_Provider implements SMSNotifier_ISMSProvider_Model
             foreach ($rows['data']['response'] as $value)
             {
                 $value = (array) $value;
+                $status = isset($value['status']) ? $value['status'] : 'error';
 
                 $results[] = array(
-                    'error' => $value['status'] === 'error',
-                    'to' => $value['number'],
-                    'id' => $value['sms_id'],
-                    'statusmessage' => isset($value['error']) ? $value['error'] : $value['status'],
-                    'status' => $this->checkstatus($value['status'])
+                    'error' => $status === 'error',
+                    'to' => isset($value['number']) ? $value['number'] : '',
+                    'id' => isset($value['sms_id']) ? $value['sms_id'] : '-',
+                    'statusmessage' => isset($value['error']) ? $value['error'] : $status,
+                    'status' => $this->checkStatus($status)
                 );
             }
         }
-
         return $results;
     }
 
-    public function checkstatus($status) 
+    public function checkStatus($status)
     {
-        if ($status == 'sent')
+        if ($status === 'sent')
         {
-            $result = self::MSG_STATUS_DISPATCHED;
+            return self::MSG_STATUS_DISPATCHED;
         } 
-        elseif ($status == 'accepted')
+        elseif ($status === 'accepted')
         {
-            $result = self::MSG_STATUS_DELIVERED;
+            return self::MSG_STATUS_DELIVERED;
         }
-        elseif ($status == 'scheduled')
+        elseif ($status === 'scheduled')
         {
-            $result = self::MSG_STATUS_PROCESSING;
+            return self::MSG_STATUS_PROCESSING;
         }
-        elseif($status == 'error')
+        elseif($status === 'error')
         {
-            $result = self::MSG_STATUS_ERROR;
+            return self::MSG_STATUS_ERROR;
         }
-        return $result;
+        return self::MSG_STATUS_FAILED;
     }
 
-    public function query($messageid)
+    public function query($messageId)
     {
         /*$params = $this->prepareParameters();
         $params['messageid'] = $messageid;

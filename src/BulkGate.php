@@ -359,19 +359,13 @@ class SMSNotifier_BulkGate_Provider implements SMSNotifier_ISMSProvider_Model
         ));
 
         $rows = json_decode($response, true);
-        var_dump("numbers before explode", $params['number']);
         $numbers = explode(';', $params['number']);
-        var_dump("--numbers",$numbers);
         $results = array();
-
-        var_dump("--params", $params);
 
         if(isset($rows['error']))
         {
-
             foreach ($numbers as $number)
             {
-                var_dump("--number",$number);
                 $results[] = array(
                     'to' => $number,
                     'error' => true,
@@ -396,11 +390,6 @@ class SMSNotifier_BulkGate_Provider implements SMSNotifier_ISMSProvider_Model
             }
         }
 
-        var_dump("rows",$rows);
-
-        var_dump("response",$response);
-
-        var_dump("results",$results);
         return $results;
     }
 

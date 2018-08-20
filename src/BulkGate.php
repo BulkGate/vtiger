@@ -20,7 +20,7 @@ class SMSNotifier_BulkGate_Provider implements SMSNotifier_ISMSProvider_Model
         array('name' => 'sender_id_value', 'label' => 'Sender value', 'type' => 'text'),
         array('name' => 'unicode', 'label' => 'Character Set', 'type' => 'picklist', 'picklistvalues' => array('1' => 'Unicode', '0' => '7bit')),
         array('name' => 'country', 'label' => 'Country', 'type' => 'picklist', 'picklistvalues' => array(
-            '' => "-",
+            '' => '-',
             'AF' => 'Afghanistan',
             'AX' => 'Aland Islands',
             'AL' => 'Albania',
@@ -307,9 +307,9 @@ class SMSNotifier_BulkGate_Provider implements SMSNotifier_ISMSProvider_Model
                 case self::SERVICE_SEND:
                     return self::SERVICE_URI.'/promotional/';
                 break;
-                /*case self::SERVICE_QUERY:
-                 return self::SERVICE_URI . '/status/message/';
-                break;*/
+                case self::SERVICE_QUERY:
+                    return self::SERVICE_URI . '/delivery/';
+                break;
             }
         }
         return false;
@@ -343,14 +343,14 @@ class SMSNotifier_BulkGate_Provider implements SMSNotifier_ISMSProvider_Model
         );
 
         $response = $httpClient->doPost(array(
-            "application_id" => $params['username'],
-            "application_token" => $params['password'],
-            "unicode" => $params["unicode"],
-            "number" => $params["number"],
-            "text" => $params["text"],
-            "sender_id" => $params["sender_id"],
-            "sender_id_value" => $params["sender_id_value"],
-            "country" => strtolower($params["country"]),
+            'application_id' => $params['username'],
+            'application_token' => $params['password'],
+            'unicode' => $params['unicode'],
+            'number' => $params['number'],
+            'text' => $params['text'],
+            'sender_id' => $params['sender_id'],
+            'sender_id_value' => $params['sender_id_value'],
+            'country' => strtolower($params['country']),
         ));
 
         $rows = json_decode($response, true);
@@ -409,31 +409,61 @@ class SMSNotifier_BulkGate_Provider implements SMSNotifier_ISMSProvider_Model
         return self::MSG_STATUS_FAILED;
     }
 
+    public function checkQueryStatus($status)
+    {
+        switch($status)
+        {
+            case '1':
+                return self::MSG_STATUS_DELIVERED;
+            break;
+            case '2':
+                return self::MSG_STATUS_PROCESSING;
+            break;
+            case '3':
+            case '8':
+                return self::MSG_STATUS_FAILED;
+            break;
+            case '6':
+                return self::MSG_STATUS_DELIVERED;
+            break;
+        }
+        return '';
+    }
+
     public function query($messageId)
     {
-        /*$params = $this->prepareParameters();
-        $params['messageid'] = $messageid;
+        $params = $this->prepareParameters();
         $serviceURL = $this->getServiceURL(self::SERVICE_QUERY);
         $httpClient = new Vtiger_Net_Client($serviceURL);
-        $response = $httpClient->doGet($params);
+
+        $response = $httpClient->doPost(array(
+            'application_id' => $params['username'],
+            'application_token' => $params['password'],
+            'sms_id' => $messageId,
+        ));
+
         $rows = json_decode($response, true);
         $result = array();
 
         if(isset($rows['error']))
         {
-            $result['error'] = true;
-            $result['status'] = self::MSG_STATUS_ERROR;
-            $result['needlookup'] = 1;
-            $result['statusmessage'] = $rows['message'];
+            $result = array(
+                'error' => true,
+                'status' => self::MSG_STATUS_DISPATCHED,
+                'needlookup' => 1,
+                'statusmessage' => $rows['error']
+            );
         }
-        else if(isset($rows['data']) && isset($rows['data']['response']))
+        else if(isset($rows['data']))
         {
-            $result['error'] = false;
-            $result['status'] = $this->checkstatus($rows['data']['0']['status']);
-            $result['needlookup'] = 0;
-            $result['statusmessage'] = $rows['message'];
+            $result = array(
+                'error' => false,
+                'status' => isset($rows['data']['status']) ? $this->checkQueryStatus($rows['data']['status']) : '',
+                'needlookup' => 0,
+                'statusmessage' => isset($rows['data']['message']) ? $rows['data']['message'] : ''
+            );
         }
-        return $result;*/
+        return $result;
     }
 
     function getProviderEditFieldTemplateName() 

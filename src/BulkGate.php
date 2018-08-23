@@ -3,9 +3,9 @@
 class SMSNotifier_BulkGate_Provider implements SMSNotifier_ISMSProvider_Model 
 {
     /** @var string */
-	private $username;
+    private $username;
 
-	/** @var string */
+    /** @var string */
     private $password;
 
     /** @var array */
@@ -269,7 +269,7 @@ class SMSNotifier_BulkGate_Provider implements SMSNotifier_ISMSProvider_Model
     );
 
     public function getName() 
-	{
+    {
         return 'BulkGate';
     }
 
@@ -299,7 +299,7 @@ class SMSNotifier_BulkGate_Provider implements SMSNotifier_ISMSProvider_Model
     }
 
     public function getServiceURL($type = false) 
-	{
+    {
         if ($type)
         {
             switch (strtoupper($type)) 
@@ -316,7 +316,7 @@ class SMSNotifier_BulkGate_Provider implements SMSNotifier_ISMSProvider_Model
     }
 
     protected function prepareParameters() 
-	{
+    {
 	    $params = array();
 
         foreach (self::$REQUIRED_PARAMETERS as $requiredParam)

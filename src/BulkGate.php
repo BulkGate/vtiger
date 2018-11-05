@@ -16,7 +16,14 @@ class SMSNotifier_BulkGate_Provider implements SMSNotifier_ISMSProvider_Model
     private static $REQUIRED_PARAMETERS = array(
         array('name' => 'username', 'label' => 'Application ID', 'type' => 'text'),
         array('name' => 'password', 'label' => 'Application token', 'type' => 'text'),
-        array('name' => 'sender_id', 'label' => 'Sender ID', 'type' => 'text'),
+        array('name' => 'sender_id',
+            'label' => 'Sender ID',
+            'type' => 'picklist',
+            'picklistvalues' => array(
+                'gSystem' => 'System number',
+                'gShort' => 'Short Code',
+                'gText' => 'Text sender'
+            )),
         array('name' => 'sender_id_value', 'label' => 'Sender value', 'type' => 'text'),
         array('name' => 'unicode', 'label' => 'Character Set', 'type' => 'picklist', 'picklistvalues' => array('1' => 'Unicode', '0' => '7bit')),
         array('name' => 'country', 'label' => 'Country', 'type' => 'picklist', 'picklistvalues' => array(
